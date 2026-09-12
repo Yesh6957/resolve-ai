@@ -3,3 +3,9 @@ venv/
 __pycache__/
 *.pyc
 .env
+
+# Large/raw data
+data/raw/
+
+# Generated database
+data/processed/chroma_db/
