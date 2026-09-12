@@ -315,7 +315,7 @@
         }
 
         /* ==========================================================================
-           INTERACTIVE DEMO WIDGET (REWRITTEN FOR REAL-TIME UX)
+           INTERACTIVE DEMO WIDGET
            ========================================================================== */
         .demo-section {
             padding: 2rem 0 6rem 0;
@@ -400,6 +400,14 @@
 
         .ai-message {
             background: #E8F0EA;
+            align-self: flex-end;
+            max-width: 90%;
+            box-shadow: 2px 2px 0px rgba(34, 34, 34, 0.05);
+            border-bottom-right-radius: 4px;
+        }
+
+        .error-message {
+            background: var(--danger-light);
             align-self: flex-end;
             max-width: 90%;
             box-shadow: 2px 2px 0px rgba(34, 34, 34, 0.05);
@@ -642,7 +650,7 @@
             }
         }
 
-        /* Simulated JSON Console Output */
+        /* JSON Console Output */
         .json-viewer {
             background: var(--code-bg);
             color: var(--code-text);
@@ -1131,9 +1139,9 @@
         <div class="hero">
             <span class="hero-badge">🎯 Production-Grade Apple Customer Support AI</span>
             <h1>Triage & Grounding<br>at Scale</h1>
-            <p>Resolve.AI utilizes deterministic rule-based parsing combined with Large Language Models (Codestral) and
-                ChromaDB RAG to intelligently classify Twitter inquiries, escalate urgent scenarios, and provide
-                grounded contextual responses in real-time.</p>
+            <p>Resolve.AI utilizes deterministic rule-based parsing combined with a Large Language Model
+                (Codestral, via LLM7) and ChromaDB RAG to intelligently classify Twitter inquiries, escalate
+                urgent scenarios, and provide grounded contextual responses in real-time.</p>
             <div class="hero-buttons">
                 <button class="btn btn-primary" onclick="switchPage('dashboard')">View CSV Metrics Dashboard</button>
                 <a href="#demo-anchor" class="btn btn-secondary">Try Live Demo</a>
@@ -1151,6 +1159,10 @@
 
                 <!-- ==========================================================
                      INTERACTIVE AI AGENT DEMO COMPONENT
+                     This calls the real backend at /api/process, which runs
+                     the actual SupportAgent pipeline: rule-based signals,
+                     LLM classification, ChromaDB RAG retrieval, and grounded
+                     reply generation. There is no client-side mock logic.
                      ========================================================== -->
                 <div class="try-it-out reveal">
                     <div class="try-it-header">
@@ -1161,9 +1173,9 @@
                                 <path d="M12 12 2.1 7.1"></path>
                                 <path d="M12 12l9.9 4.9"></path>
                             </svg>
-                            Live Pipeline Simulator
+                            Live Pipeline
                         </h3>
-                        <span class="badge badge-success">Interactive</span>
+                        <span class="badge badge-success">Real Backend</span>
                     </div>
 
                     <!-- Chat History Area -->
@@ -1173,10 +1185,13 @@
                             <div class="message-sender">
                                 <span class="logo-dot"></span> System Initialization
                             </div>
-                            <p class="message-text">Hello! I am the Resolve.AI Triage Engine. I replicate the exact
-                                Python logic developed in <code>pipeline.py</code>. <br><br>Type a mock customer tweet
-                                below. I will execute rule-based preprocessing for Toxicity/PII/Hardware, followed by
-                                LLM intent classification, and finally ChromaDB RAG retrieval to generate a response.
+                            <p class="message-text">Hello! I am the Resolve.AI Triage Engine, calling the real
+                                <code>SupportAgent</code> pipeline on the backend. <br><br>Type a customer tweet
+                                below and it will be sent to the live server, which runs rule-based safety checks,
+                                an LLM intent classification call, and (if safe to auto-handle) a ChromaDB RAG
+                                lookup against historical Apple Support resolutions before drafting a grounded reply.
+                                <br><br><em>Note: this app is hosted on a free-tier plan, so the first request after
+                                a period of inactivity may take 30–60 seconds while the server spins up.</em>
                             </p>
                         </div>
                     </div>
@@ -1217,24 +1232,26 @@
                 <!-- Explanation of the Pipeline Architecture -->
                 <div class="methodology-section reveal" style="margin-top: 4rem;">
                     <h3>🏗️ Technical Architecture (pipeline.py)</h3>
-                    <p style="color: var(--text-gray); margin-bottom: 2rem; font-size: 1.1rem;">The interactive demo
-                        above is powered by a JavaScript simulation of the actual Python pipeline built for this
-                        assignment. Here is how the real backend processes data:</p>
+                    <p style="color: var(--text-gray); margin-bottom: 2rem; font-size: 1.1rem;">The demo above
+                        calls the real backend directly — this is the actual pipeline processing your input, not a
+                        client-side simulation:</p>
 
                     <ul class="methodology-list">
                         <li><strong>Deterministic Safety Layer:</strong> Before hitting the LLM, regex patterns scan the
-                            text for PII (emails/phones), extreme toxicity, or high-risk keywords (e.g., "refund",
-                            "cracked"). This ensures zero-shot hallucination prevention for critical escalations.</li>
-                        <li><strong>LLM Intent Classification:</strong> A structured prompt requests the LLM (Codestral)
-                            to classify the tweet into one of 7 strict JSON categories (e.g.,
-                            <code>software_troubleshooting</code>, <code>billing_purchases</code>).
+                            text for PII (emails/phones), explicit toxicity, physical hardware damage, and billing
+                            keywords. This ensures escalation is guaranteed for obvious violations without depending
+                            on probabilistic LLM output.</li>
+                        <li><strong>LLM Intent Classification:</strong> A structured prompt requests the LLM (Codestral,
+                            via LLM7) to classify the tweet into one of 7 strict JSON categories (e.g.,
+                            <code>software_troubleshooting</code>, <code>billing_purchases</code>), with the
+                            rule-based signals passed in as additional context.
                         </li>
                         <li><strong>ChromaDB RAG Retrieval:</strong> If the ticket is safe to auto-handle, the
-                            customer's text is embedded and queried against a local ChromaDB instance containing 1,800
-                            historical Apple Support resolutions.</li>
-                        <li><strong>Grounded Generation:</strong> The LLM drafts a < 280 character response strictly
-                                grounded in the retrieved historical examples, ensuring brand voice and policy
-                                compliance.</li>
+                            customer's text is embedded and queried against a local ChromaDB collection of historical
+                            Apple Support resolutions.</li>
+                        <li><strong>Grounded Generation:</strong> The LLM drafts a reply strictly grounded in the
+                            retrieved historical examples. If the ticket is escalated, no reply is generated at all —
+                            the ticket is routed straight to a human queue.</li>
                     </ul>
                 </div>
             </div>
@@ -1477,15 +1494,17 @@
         }
 
         /* --------------------------------------------------------------------------
-           2. DYNAMIC DATA LOADING (MOCK API FALLBACK TO EXACT PYTHON CSV OUTPUT)
+           2. DYNAMIC DATA LOADING (DASHBOARD METRICS)
            -------------------------------------------------------------------------- */
-        // This function attempts to fetch from a live backend API.
-        // Because browsers cannot read local CSV files directly for security reasons,
-        // it falls back to the exact metrics pulled from the evaluate_3.py output.
+        // NOTE: this fetches from a relative path so it works both locally and
+        // when deployed (e.g. on Render), rather than a hardcoded localhost URL.
+        // ⚠️ You still need to point this at a real endpoint that matches one of
+        // the routes in main.py (e.g. /api/executive-summary + /api/intent-distribution
+        // + /api/accuracy-comparison + /api/class-wise-performance + /api/llm-judge),
+        // since main.py does not currently expose a single combined /api/metrics route.
         async function loadDynamicData() {
             try {
-                // Attempt backend fetch (e.g. if running a Flask server)
-                const res = await fetch('http://localhost:5000/api/metrics');
+                const res = await fetch('/api/metrics');
                 if (!res.ok) throw new Error("API not available");
                 const data = await res.json();
                 populateDashboard(data);
@@ -1634,7 +1653,9 @@
         }
 
         /* --------------------------------------------------------------------------
-           4. INTERACTIVE LIVE PIPELINE SIMULATOR (MIMICKING python_3.py)
+           4. LIVE PIPELINE CHAT WIDGET — calls the real /api/process endpoint.
+           No client-side mock logic. Whatever the backend returns is what
+           gets rendered, including real errors (e.g. cold start / LLM failure).
            -------------------------------------------------------------------------- */
 
         // Helper function for the quick-action buttons
@@ -1656,7 +1677,7 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        // Toggles the visibility of the simulated JSON output
+        // Toggles the visibility of the raw JSON output
         function toggleJSON(id) {
             const el = document.getElementById(id);
             if (el.classList.contains('visible')) {
@@ -1666,8 +1687,16 @@
             }
         }
 
-        // Main Simulation Engine
-        function processAgentQuery() {
+        function syntaxHighlightJSON(obj) {
+            return JSON.stringify(obj, null, 2)
+                .replace(/"(.*?)":/g, '<span class="json-key">"$1"</span>:')
+                .replace(/: "(.*?)"/g, ': <span class="json-string">"$1"</span>')
+                .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+                .replace(/: ([0-9.]+)/g, ': <span class="json-number">$1</span>');
+        }
+
+        // Main entry point: sends the customer message to the real backend pipeline
+        async function processAgentQuery() {
             const inputEl = document.getElementById('demo-input');
             const btn = document.getElementById('send-btn');
             const text = inputEl.value.trim();
@@ -1679,7 +1708,7 @@
             chatBox.innerHTML += `
                 <div class="chat-message user-message">
                     <div class="message-sender">👤 Customer</div>
-                    <p class="message-text">${text}</p>
+                    <p class="message-text">${escapeHTML(text)}</p>
                 </div>
             `;
             inputEl.value = '';
@@ -1689,7 +1718,7 @@
             btn.disabled = true;
             scrollToBottom();
 
-            // 2. Append LLM Loading Indicator
+            // 2. Append typing indicator (real network latency, no artificial delay)
             const loaderId = 'loader-' + Date.now();
             chatBox.innerHTML += `
                 <div id="${loaderId}" class="chat-message ai-message typing-indicator">
@@ -1698,128 +1727,131 @@
             `;
             scrollToBottom();
 
-            // 3. Simulate Pipeline Latency and Logic (Timeout 1.5 seconds)
-            setTimeout(() => {
+            try {
+                // 3. Call the real backend pipeline
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                const result = await response.json();
+
                 document.getElementById(loaderId).remove();
                 inputEl.disabled = false;
                 btn.disabled = false;
                 inputEl.focus();
 
-                // MOCK LOGIC: Replicating `detect_rule_based_signals()` and LLM routing
-                const lower = text.toLowerCase();
-                let intent = "general_inquiry";
-                let escalate = false;
-                let reason = "Safe for auto-reply";
-                let risk = "Low (Standard)";
-                let riskClass = "risk-low";
-                let reply = "";
-
-                // Regex Fallback Checks (Pre-LLM)
-                if (lower.match(/(crack|break|drop|shatter|water|damage|swollen|battery|broke)/)) {
-                    intent = "hardware_repair";
-                    escalate = true;
-                    reason = "Physical hardware damage detected via rule-base.";
-                    risk = "High (Hardware Defect)";
-                    riskClass = "risk-high";
-                } else if (lower.match(/(refund|charge|money|pay|billing)/)) {
-                    intent = "billing_purchases";
-                    escalate = true;
-                    reason = "Refund or disputed charge detected.";
-                    risk = "High (Financial)";
-                    riskClass = "risk-high";
-                } else if (lower.match(/(fuck|shit|useless|hate|idiot|garbage|terrible|horrible)/)) {
-                    intent = "other";
-                    escalate = true;
-                    reason = "Highly frustrated or toxic customer detected.";
-                    risk = "Critical (Toxicity)";
-                    riskClass = "risk-critical";
-                } else if (lower.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/)) {
-                    intent = "account_security";
-                    escalate = true;
-                    reason = "Customer message contains possible PII (Email).";
-                    risk = "Critical (PII Leak)";
-                    riskClass = "risk-critical";
-                } else if (lower.match(/(update|bug|glitch|freeze|crash|ios|app)/)) {
-                    intent = "software_troubleshooting";
-                    reply = "I understand you're facing software issues. We recently released an iOS patch. Have you updated to the latest version in Settings > General > Software Update?";
-                } else if (lower.match(/(password|lock|login|apple id)/)) {
-                    intent = "account_security";
-                    reply = "For your security, I cannot access your Apple ID over social media. Please visit iforgot.apple.com to reset your credentials securely.";
-                } else if (lower.match(/(wifi|bluetooth|connect|internet)/)) {
-                    intent = "device_connectivity";
-                    reply = "Let's check your network settings. Try toggling Airplane mode on and off, or go to Settings > General > Reset > Reset Network Settings.";
-                } else {
-                    reply = "Thank you for reaching out to Apple Support. Could you provide a bit more detail regarding the issue so I can assist you properly?";
+                if (!response.ok) {
+                    renderErrorMessage(result.error || 'The pipeline returned an error.', result.detail);
+                    scrollToBottom();
+                    return;
                 }
 
-                // Create Mock JSON response to show the user
-                const mockJson = {
-                    intent: intent,
-                    confidence_score: escalate ? 0.99 : parseFloat((Math.random() * (0.98 - 0.85) + 0.85).toFixed(2)),
-                    should_escalate: escalate,
-                    escalation_reason: escalate ? reason : ""
-                };
+                renderAgentResponse(result);
+                scrollToBottom();
 
-                const jsonId = 'json-' + Date.now();
-                const jsonString = JSON.stringify(mockJson, null, 2)
-                    .replace(/"(.*?)":/g, '<span class="json-key">"$1"</span>:')
-                    .replace(/: "(.*?)"/g, ': <span class="json-string">"$1"</span>')
-                    .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
-                    .replace(/: ([0-9.]+)/g, ': <span class="json-number">$1</span>');
+            } catch (err) {
+                document.getElementById(loaderId).remove();
+                inputEl.disabled = false;
+                btn.disabled = false;
+                inputEl.focus();
 
-                // 4. Construct AI Response HTML
-                let aiBlock = `
+                renderErrorMessage(
+                    'Could not reach the live backend.',
+                    'This can happen on a free-tier host if the server is spinning up from idle (can take 30–60s) — try again in a moment.'
+                );
+                scrollToBottom();
+            }
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function renderErrorMessage(message, detail) {
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `
+                <div class="chat-message error-message">
+                    <div class="message-sender">⚠️ Pipeline Error</div>
+                    <p class="message-text">${escapeHTML(message)}</p>
+                    ${detail ? `<p class="message-text" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-gray);"><em>${escapeHTML(detail)}</em></p>` : ''}
+                </div>
+            `;
+        }
+
+        // Renders the real result returned by SupportAgent.process_tweet()
+        // Shape: { status: "escalated" | "auto_handled", analysis: {...}, reply, retrieved_examples }
+        function renderAgentResponse(result) {
+            const chatBox = document.getElementById('chat-box');
+            const analysis = result.analysis || {};
+            const intent = analysis.intent || 'unknown';
+            const confidence = typeof analysis.confidence_score === 'number'
+                ? analysis.confidence_score.toFixed(2)
+                : 'n/a';
+            const isEscalated = result.status === 'escalated';
+
+            let riskLabel = 'Low (Standard)';
+            let riskClass = 'risk-low';
+            if (isEscalated) {
+                riskLabel = 'Escalated';
+                riskClass = 'risk-critical';
+            }
+
+            let aiBlock = `
                 <div class="chat-message ai-message">
                     <div class="message-sender">
                         <span class="logo-dot"></span> Pipeline Resolution
                     </div>
-                    
                     <div class="processing-steps">
-                        <span class="step-badge">Intent: ${intent}</span>
-                        <span class="step-badge">Conf: ${mockJson.confidence_score}</span>
-                        <span class="step-badge ${riskClass}">Risk: ${risk}</span>
+                        <span class="step-badge">Intent: ${escapeHTML(intent)}</span>
+                        <span class="step-badge">Conf: ${confidence}</span>
+                        <span class="step-badge ${riskClass}">Status: ${riskLabel}</span>
                     </div>`;
 
-                if (escalate) {
-                    aiBlock += `
-                        <div class="action-taken">
-                            <div class="action-header">
-                                <span class="status-indicator escalate">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-                                    ESCALATED TO HUMAN
-                                </span>
-                            </div>
-                            <span class="action-reason">REASON: ${reason}</span>
-                        </div>
-                        <p class="message-text" style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-gray);">
-                            <em>Note: LLM generation halted to save tokens. Ticket routed to human agent queue.</em>
-                        </p>
-                    `;
-                } else {
-                    aiBlock += `
-                        <p class="message-text"><strong>Reply:</strong> "${reply}"</p>
-                        <div class="action-taken">
-                            <div class="action-header">
-                                <span class="status-indicator handled">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
-                                    AUTO-HANDLED
-                                </span>
-                            </div>
-                            <span class="action-reason">Context retrieved via ChromaDB</span>
-                        </div>
-                    `;
-                }
-
-                // Add Toggleable JSON Block
+            if (isEscalated) {
+                const reason = analysis.escalation_reason || 'Escalation criteria met.';
                 aiBlock += `
-                    <button class="toggle-json-btn" onclick="toggleJSON('${jsonId}')">View Raw JSON Output</button>
-                    <pre id="${jsonId}" class="json-viewer">${jsonString}</pre>
-                </div>`;
+                    <div class="action-taken">
+                        <div class="action-header">
+                            <span class="status-indicator escalate">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                                ESCALATED TO HUMAN
+                            </span>
+                        </div>
+                        <span class="action-reason">REASON: ${escapeHTML(reason)}</span>
+                    </div>
+                    <p class="message-text" style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-gray);">
+                        <em>No reply was generated for this ticket — escalated tickets are routed straight to a
+                        human agent instead of receiving an AI-drafted response.</em>
+                    </p>
+                `;
+            } else {
+                const reply = result.reply || '(no reply returned)';
+                const retrievedCount = typeof result.retrieved_examples === 'number' ? result.retrieved_examples : 0;
+                aiBlock += `
+                    <p class="message-text"><strong>Reply:</strong> "${escapeHTML(reply)}"</p>
+                    <div class="action-taken">
+                        <div class="action-header">
+                            <span class="status-indicator handled">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+                                AUTO-HANDLED
+                            </span>
+                        </div>
+                        <span class="action-reason">Grounded in ${retrievedCount} retrieved ChromaDB example(s)</span>
+                    </div>
+                `;
+            }
 
-                chatBox.innerHTML += aiBlock;
-                scrollToBottom();
+            const jsonId = 'json-' + Date.now();
+            aiBlock += `
+                <button class="toggle-json-btn" onclick="toggleJSON('${jsonId}')">View Raw JSON Output</button>
+                <pre id="${jsonId}" class="json-viewer">${syntaxHighlightJSON(result)}</pre>
+            </div>`;
 
-            }, 1500); // 1.5s simulated delay
+            chatBox.innerHTML += aiBlock;
         }
     </script>
 </body>
