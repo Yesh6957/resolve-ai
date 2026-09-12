@@ -52,9 +52,9 @@ resolve-ai/
 │       ├── rag_knowledge_base.csv    # ~1,800 historical resolutions used for RAG retrieval
 │       └── baseline_results.txt      # Trivial + heuristic baseline outputs
 ├── requirements.txt
-└── .env.example                 # API keys required (Groq, Gemini) — see Setup below
+└── .env.example                 # API keys required (Groq)
 ```
-> ⚠️ Adjust this section to match your actual pipeline/ingestion/evaluation script names (e.g. `pipeline.py`, `evaluate.py`, `baselines.py`) — fill in whatever the real filenames are before submitting, since this is what you'll be asked to walk through live.
+
 
 ## Setup and reproduction
 
