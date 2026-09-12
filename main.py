@@ -16,9 +16,12 @@ from datetime import datetime
 # ============================================================
 # SETUP
 # ============================================================
-
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
+
+@app.route('/')
+def home():
+    return app.send_static_file('index.html')
 
 # Load environment variables
 PROJECT_ROOT = Path(__file__).resolve().parent
