@@ -1,0 +1,14 @@
+TRUE BASELINES VS AGENT PERFORMANCE
+
+INTENT
+Trivial Baseline Accuracy: 0.6000
+Simple Heuristic Accuracy: 0.4450
+Agent Accuracy: 0.2550
+
+ESCALATION
+Trivial Baseline Accuracy: 0.5250
+Simple Heuristic Accuracy: 0.5600
+Agent Accuracy: 0.5900
+Agent Precision: 0.7826
+Agent Recall: 0.1895
+Agent F1: 0.3051

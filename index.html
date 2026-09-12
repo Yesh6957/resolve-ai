@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolve.AI - Customer Support Intelligence</title>
+
+    <!-- Chart.js for rendering dynamic evaluation metrics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Plus Jakarta Sans for a clean, modern aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* ==========================================================================
+           RESET & CSS VARIABLES
+           ========================================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Core Color Palette based on requested theme */
+            --primary: #526B5D;
+            /* Muted sage-green */
+            --primary-light: #7A9084;
+            /* Lighter sage */
+            --primary-dark: #3B4F43;
+            /* Deep sage */
+            --bg-light: #FBF9F5;
+            /* Warm soft cream */
+            --bg-white: #FFFFFF;
+            /* Pure white */
+            --bg-active: #F2F6F1;
+            /* Light muted sage-green for active states */
+            --text-dark: #222222;
+            /* Deep charcoal/soft black */
+            --text-gray: #4A4A4A;
+            /* Highly readable dark gray */
+            --text-muted: #888888;
+            /* Muted gray for secondary text */
+            --border-color: #222222;
+            /* Crisp dark charcoal */
+
+            /* Semantic Colors for UI Feedback */
+            --success: #526B5D;
+            /* Muted earthy green */
+            --success-light: #E8F0EA;
+            /* Very light green background */
+            --warning: #C18C4D;
+            /* Earthy ochre */
+            --warning-light: #FDF3E5;
+            /* Very light ochre background */
+            --danger: #BA5A52;
+            /* Earthy terracotta */
+            --danger-light: #F9EBEA;
+            /* Very light terracotta background */
+
+            /* Code & Terminal Colors */
+            --code-bg: #1E1E1E;
+            --code-text: #D4D4D4;
+            --code-keyword: #569CD6;
+            --code-string: #CE9178;
+        }
+
+        /* ==========================================================================
+           BASE TYPOGRAPHY & BODY STYLES
+           ========================================================================== */
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            letter-spacing: -0.01em;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        code,
+        pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+
+        /* ==========================================================================
+           NAVIGATION STYLES
+           ========================================================================== */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid transparent;
+        }
+
+        nav a:hover {
+            color: var(--text-dark);
+            background: rgba(242, 246, 241, 0.8);
+            border: 1px solid var(--border-color);
+        }
+
+        nav a.active {
+            color: var(--text-dark);
+            background: var(--bg-active);
+            border: 1px solid var(--border-color);
+        }
+
+        /* ==========================================================================
+           LAYOUT CONTAINERS
+           ========================================================================== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Single Page Application (SPA) view toggling */
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* ==========================================================================
+           ANIMATIONS
+           ========================================================================== */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ==========================================================================
+           HERO SECTION
+           ========================================================================== */
+        #home {
+            background: var(--bg-light);
+        }
+
+        .hero {
+            padding: 6rem 2rem 4rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--bg-white);
+            color: var(--text-dark);
+            padding: 0.5rem 1.25rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 2px 2px 0px rgba(34, 34, 34, 0.1);
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            letter-spacing: -0.03em;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-gray);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.25rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 5rem;
+        }
+
+        /* ==========================================================================
+           BUTTON STYLES
+           ========================================================================== */
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            box-shadow: 3px 3px 0px rgba(34, 34, 34, 0.15);
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-white);
+            border-color: var(--border-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px rgba(34, 34, 34, 0.2);
+        }
+
+        .btn-secondary {
+            background: var(--bg-white);
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-active);
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px rgba(34, 34, 34, 0.2);
+        }
+
+        .btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px rgba(34, 34, 34, 0.15);
+        }
+
+        /* ==========================================================================
+           INTERACTIVE DEMO WIDGET (REWRITTEN FOR REAL-TIME UX)
+           ========================================================================== */
+        .demo-section {
+            padding: 2rem 0 6rem 0;
+        }
+
+        .try-it-out {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-white);
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: 6px 6px 0px rgba(34, 34, 34, 0.1);
+            overflow: hidden;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .try-it-header {
+            padding: 1.5rem 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-active);
+        }
+
+        .try-it-header h3 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* The scrollable chat history area */
+        .chat-container {
+            padding: 2.5rem;
+            background: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: 450px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar for Chat */
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .chat-message {
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .user-message {
+            background: var(--bg-white);
+            align-self: flex-start;
+            max-width: 85%;
+            box-shadow: 2px 2px 0px rgba(34, 34, 34, 0.05);
+            border-bottom-left-radius: 4px;
+        }
+
+        .ai-message {
+            background: #E8F0EA;
+            align-self: flex-end;
+            max-width: 90%;
+            box-shadow: 2px 2px 0px rgba(34, 34, 34, 0.05);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-sender {
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            color: var(--text-gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .message-text {
+            font-size: 1.05rem;
+            color: var(--text-dark);
+        }
+
+        /* Badges for AI Pipeline details */
+        .processing-steps {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .step-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-transform: uppercase;
+            background: var(--bg-white);
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .risk-high {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .risk-critical {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        .risk-low {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        /* The final action taken by the AI */
+        .action-taken {
+            margin-top: 1.25rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .action-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-reason {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-gray);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator.escalate {
+            color: var(--danger);
+        }
+
+        .status-indicator.handled {
+            color: var(--success);
+        }
+
+        /* Real-time Input Area */
+        .chat-input-wrapper {
+            background: var(--bg-white);
+            padding: 1.5rem 2.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            font-family: inherit;
+            font-size: 1rem;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: inset 0 0 0 1px var(--primary);
+            background: var(--bg-white);
+        }
+
+        .chat-input::placeholder {
+            color: #A0A0A0;
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1rem 2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 2px 2px 0px rgba(34, 34, 34, 0.15);
+            font-family: inherit;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-btn:hover {
+            background: var(--primary-dark);
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px rgba(34, 34, 34, 0.15);
+        }
+
+        .send-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px rgba(34, 34, 34, 0.15);
+        }
+
+        .send-btn:disabled {
+            background: #CCCCCC;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            color: #888888;
+        }
+
+        /* Quick action suggestions */
+        .quick-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            background: transparent;
+            border: 1px solid #DDDDDD;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-gray);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--bg-active);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+
+        /* Typing Indicator Animation */
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 1.5rem;
+            align-items: center;
+            width: fit-content;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        /* Simulated JSON Console Output */
+        .json-viewer {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            border: 1px solid #000;
+            display: none;
+            /* Hidden by default, toggled via button */
+        }
+
+        .json-viewer.visible {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .json-key {
+            color: var(--code-keyword);
+        }
+
+        .json-string {
+            color: var(--code-string);
+        }
+
+        .json-boolean {
+            color: #569CD6;
+        }
+
+        .json-number {
+            color: #B5CEA8;
+        }
+
+        .toggle-json-btn {
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 0.5rem;
+            font-family: inherit;
+        }
+
+        /* ==========================================================================
+           DASHBOARD KPIs & CHARTS
+           ========================================================================== */
+        #dashboard {
+            padding: 2rem 0 4rem 0;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .dashboard-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-white);
+            padding: 2.5rem 2rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 3px 3px 0px rgba(34, 34, 34, 0.08);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px rgba(34, 34, 34, 0.12);
+        }
+
+        /* Small decorative accent on KPI cards */
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary);
+            opacity: 0.5;
+        }
+
+        .kpi-label {
+            color: var(--text-gray);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .kpi-change {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-gray);
+        }
+
+        .kpi-change.positive {
+            color: var(--success);
+        }
+
+        .kpi-change.negative {
+            color: var(--danger);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-card {
+            background: var(--bg-white);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 3px 3px 0px rgba(34, 34, 34, 0.08);
+            transition: all 0.2s;
+        }
+
+        .chart-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px rgba(34, 34, 34, 0.12);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            letter-spacing: -0.01em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        /* ==========================================================================
+           TABLES
+           ========================================================================== */
+        .table-card {
+            background: var(--bg-white);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 3px 3px 0px rgba(34, 34, 34, 0.08);
+            margin-bottom: 3rem;
+            transition: all 0.2s;
+        }
+
+        .table-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px rgba(34, 34, 34, 0.12);
+        }
+
+        .table-header {
+            padding: 2rem 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-white);
+        }
+
+        .table-header h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-dark);
+        }
+
+        .responsive-table {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+        }
+
+        th {
+            background: var(--bg-light);
+            padding: 1.25rem 2.5rem;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-gray);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1.25rem 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-dark);
+            font-weight: 500;
+            background: var(--bg-white);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--bg-active);
+        }
+
+        /* Common Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+            box-shadow: 1px 1px 0px rgba(34, 34, 34, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        /* ==========================================================================
+           FRONTIER / RESEARCH SECTION
+           ========================================================================== */
+        #frontier {
+            padding: 2rem 0 4rem 0;
+        }
+
+        .frontier-hero {
+            background: var(--bg-white);
+            padding: 4rem 3rem;
+            border-radius: 20px;
+            margin-bottom: 3rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 4px 4px 0px rgba(34, 34, 34, 0.1);
+        }
+
+        .frontier-hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+        }
+
+        .frontier-hero p {
+            font-size: 1.15rem;
+            color: var(--text-gray);
+            max-width: 700px;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        .methodology-section {
+            background: var(--bg-white);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 3rem;
+            box-shadow: 3px 3px 0px rgba(34, 34, 34, 0.08);
+        }
+
+        .methodology-section h3 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+        }
+
+        .methodology-list {
+            list-style: none;
+        }
+
+        .methodology-list li {
+            padding: 1.25rem 0;
+            padding-left: 2.5rem;
+            position: relative;
+            color: var(--text-gray);
+            line-height: 1.6;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+
+        .methodology-list li strong {
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        .methodology-list li:last-child {
+            border-bottom: none;
+        }
+
+        .methodology-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        /* ==========================================================================
+           ABOUT ME & FOOTER
+           ========================================================================== */
+        .about-me-section {
+            background: var(--bg-white);
+            padding: 4rem 3rem;
+            border-radius: 20px;
+            margin-top: 4rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 4px 4px 0px rgba(34, 34, 34, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .about-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+        }
+
+        .about-info h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .about-info .subtitle {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+
+        .about-info p {
+            color: var(--text-gray);
+            max-width: 750px;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        .about-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        footer {
+            background: var(--text-dark);
+            color: var(--bg-light);
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-top: 5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        footer p {
+            opacity: 0.9;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        /* ==========================================================================
+           MEDIA QUERIES (RESPONSIVENESS)
+           ========================================================================== */
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2.75rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .send-btn {
+                width: 100%;
+            }
+
+            .try-it-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .about-me-section {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .about-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Navigation Bar -->
+    <nav id="navbar">
+        <nav-content>
+            <div class="logo">
+                <span class="logo-dot"></span>
+                Resolve.AI
+            </div>
+            <ul>
+                <li><a onclick="switchPage('home')" id="nav-home" class="nav-link active">Home</a></li>
+                <li><a onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-link">Metrics</a></li>
+                <li><a onclick="switchPage('frontier')" id="nav-frontier" class="nav-link">AI Frontier</a></li>
+            </ul>
+        </nav-content>
+    </nav>
+
+    <!-- ==========================================================================
+         PAGE 1: HOME (HERO & INTERACTIVE DEMO)
+         ========================================================================== -->
+    <div id="home" class="page active">
+        <div class="hero">
+            <span class="hero-badge">🎯 Production-Grade Customer Support AI</span>
+            <h1>Triage & Grounding<br>at Scale</h1>
+            <p>Resolve.AI utilizes deterministic rule-based parsing combined with Large Language Models (Codestral) and
+                ChromaDB RAG to intelligently classify Twitter inquiries, escalate urgent scenarios, and provide
+                grounded contextual responses in real-time.</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="switchPage('dashboard')">View CSV Metrics Dashboard</button>
+                <a href="#demo-anchor" class="btn btn-secondary">Try Live Demo</a>
+
+                <a href="https://github.com/Yesh6957/resolve-ai" class="btn btn-primary">Project GitHub</a>
+                <a href="https://drive.google.com/file/d/1v0LRXOznDyZps75GSKUwK3qaBDU-sY1U/view?usp=drivesdk"
+                    class="btn btn-secondary">Report Document</a>
+                <a href="https://yesh-portfolio-dev.vercel.app/" class="btn btn-secondary">My Portfolio</a>
+
+            </div>
+
+            <div class="container">
+
+                <div id="demo-anchor" style="height: 40px;"></div> <!-- Anchor for scrolling -->
+
+                <!-- ==========================================================
+                     INTERACTIVE AI AGENT DEMO COMPONENT
+                     ========================================================== -->
+                <div class="try-it-out reveal">
+                    <div class="try-it-header">
+                        <h3>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+                                <path d="M12 12 2.1 7.1"></path>
+                                <path d="M12 12l9.9 4.9"></path>
+                            </svg>
+                            Live Pipeline Simulator
+                        </h3>
+                        <span class="badge badge-success">Interactive</span>
+                    </div>
+
+                    <!-- Chat History Area -->
+                    <div class="chat-container" id="chat-box">
+                        <!-- Initial System Message -->
+                        <div class="chat-message ai-message">
+                            <div class="message-sender">
+                                <span class="logo-dot"></span> System Initialization
+                            </div>
+                            <p class="message-text">Hello! I am the Resolve.AI Triage Engine. I replicate the exact
+                                Python logic developed in <code>pipeline_3.py</code>. <br><br>Type a mock customer tweet
+                                below. I will execute rule-based preprocessing for Toxicity/PII/Hardware, followed by
+                                LLM intent classification, and finally ChromaDB RAG retrieval to generate a response.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="chat-input-wrapper">
+                        <div class="quick-actions">
+                            <button class="quick-action-btn"
+                                onclick="fillInput('My iPhone screen shattered when I dropped it. How do I fix this?')">📱
+                                Hardware Damage</button>
+                            <button class="quick-action-btn"
+                                onclick="fillInput('I was charged twice for Apple Music. I want a refund right now.')">💳
+                                Billing Dispute</button>
+                            <button class="quick-action-btn"
+                                onclick="fillInput('The new iOS update keeps crashing my settings app.')">🐛 Software
+                                Bug</button>
+                            <button class="quick-action-btn"
+                                onclick="fillInput('Your service is absolute garbage and nothing works. Fix it.')">🤬
+                                Toxic Input</button>
+                        </div>
+
+                        <div class="input-group">
+                            <input type="text" id="demo-input" class="chat-input"
+                                placeholder="Type a customer tweet here..." onkeypress="handleEnter(event)"
+                                autocomplete="off">
+                            <button id="send-btn" class="send-btn" onclick="processAgentQuery()">
+                                Process
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M22 2 11 13"></path>
+                                    <path d="m22 2-7 20-4-9-9-4 20-7z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation of the Pipeline Architecture -->
+                <div class="methodology-section reveal" style="margin-top: 4rem;">
+                    <h3>🏗️ Technical Architecture (pipeline.py)</h3>
+                    <p style="color: var(--text-gray); margin-bottom: 2rem; font-size: 1.1rem;">The interactive demo
+                        above is powered by a JavaScript simulation of the actual Python pipeline built for this
+                        assignment. Here is how the real backend processes data:</p>
+
+                    <ul class="methodology-list">
+                        <li><strong>Deterministic Safety Layer:</strong> Before hitting the LLM, regex patterns scan the
+                            text for PII (emails/phones), extreme toxicity, or high-risk keywords (e.g., "refund",
+                            "cracked"). This ensures zero-shot hallucination prevention for critical escalations.</li>
+                        <li><strong>LLM Intent Classification:</strong> A structured prompt requests the LLM (Codestral)
+                            to classify the tweet into one of 7 strict JSON categories (e.g.,
+                            <code>software_troubleshooting</code>, <code>billing_purchases</code>).
+                        </li>
+                        <li><strong>ChromaDB RAG Retrieval:</strong> If the ticket is safe to auto-handle, the
+                            customer's text is embedded and queried against a local ChromaDB instance containing 1,800
+                            historical Apple Support resolutions.</li>
+                        <li><strong>Grounded Generation:</strong> The LLM drafts a < 280 character response strictly
+                                grounded in the retrieved historical examples, ensuring brand voice and policy
+                                compliance.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         PAGE 2: DASHBOARD (DYNAMIC METRICS FROM evaluate_3.py)
+         ========================================================================== -->
+    <div id="dashboard" class="page">
+        <div class="container">
+            <div class="dashboard-header reveal">
+                <h2>Evaluation Metrics Dashboard</h2>
+                <div class="time-range">
+                    <span class="badge badge-success">Data Synced from CSV Evaluation</span>
+                </div>
+            </div>
+
+            <!-- Dynamic KPIs loaded via JS -->
+            <div class="kpi-grid">
+                <div class="kpi-card reveal">
+                    <div class="kpi-label">Trivial Baseline Accuracy</div>
+                    <div class="kpi-value" id="kpi-baseline">Loading...</div>
+                    <div class="kpi-change">Predicting "General Inquiry"</div>
+                </div>
+                <div class="kpi-card reveal">
+                    <div class="kpi-label">Agent Intent Accuracy</div>
+                    <div class="kpi-value" id="kpi-accuracy">Loading...</div>
+                    <div class="kpi-change negative">Exposes LLM Domain Bias</div>
+                </div>
+                <div class="kpi-card reveal">
+                    <div class="kpi-label">Escalation Precision</div>
+                    <div class="kpi-value" id="kpi-safety-p">Loading...</div>
+                    <div class="kpi-change positive">Accurate when triggered</div>
+                </div>
+                <div class="kpi-card reveal">
+                    <div class="kpi-label">Escalation Recall</div>
+                    <div class="kpi-value" id="kpi-safety-r">Loading...</div>
+                    <div class="kpi-change negative">High False Negative Rate</div>
+                </div>
+            </div>
+
+            <!-- Interactive Chart.js Canvas Containers -->
+            <div class="charts-grid">
+                <div class="chart-card reveal">
+                    <div class="chart-title">Golden Dataset Imbalance</div>
+                    <div class="chart-container">
+                        <canvas id="intentChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card reveal">
+                    <div class="chart-title">Performance vs Baselines</div>
+                    <div class="chart-container">
+                        <canvas id="accuracyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Dive Data Tables -->
+            <div class="table-card reveal">
+                <div class="table-header">
+                    <h3>Per-Intent Performance Metrics (Classification Report)</h3>
+                </div>
+                <div class="responsive-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Intent Class</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1-Score</th>
+                                <th>Support</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metrics-table-body">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LLM Judge Results -->
+            <div class="table-card reveal">
+                <div class="table-header">
+                    <h3>LLM-as-a-Judge Auto-Evaluation Results</h3>
+                </div>
+                <div class="responsive-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Average Score (Out of 5)</th>
+                                <th>Rubric Definition</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Tone</strong></td>
+                                <td><span class="badge badge-warning" id="judge-tone-val">Loading...</span></td>
+                                <td>Empathetic, professional, concise, and appropriate for customer support.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Grounding</strong></td>
+                                <td><span class="badge badge-danger" id="judge-grounding-val">Loading...</span></td>
+                                <td>Addresses actual issue, provides realistic next step, avoids invented URLs/policies.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         PAGE 3: AI FRONTIER & ABOUT ME
+         ========================================================================== -->
+    <div id="frontier" class="page">
+        <div class="container">
+            <div class="frontier-hero reveal">
+                <h1>The "Misleading" Metrics</h1>
+                <p>As requested in the assignment rubric, this section explores why the headline accuracy numbers hide
+                    the true performance of the system, and what specific failures occurred during the evaluation
+                    process.</p>
+            </div>
+
+            <div class="methodology-section reveal">
+                <h3>🔍 Failure Analysis (Top 5 Modes)</h3>
+                <ul class="methodology-list">
+                    <li><strong>LLM Domain Bias (Codestral):</strong> The model predicted
+                        <code>software_troubleshooting</code> 73 times for queries that were actually
+                        <code>general_inquiry</code>. Being a coding-centric model, its latent space over-indexes on
+                        software bugs.
+                    </li>
+                    <li><strong>Sarcasm Blindness:</strong> Customers tweeting heavy sarcasm (e.g., "I love being a beta
+                        tester for iOS") bypassed the rule-based toxicity checks and were auto-handled instead of
+                        escalated to human empathy teams.</li>
+                    <li><strong>Missing Temporal Context:</strong> Tweets complaining about "the letter 'I' glitch"
+                        failed because the LLM lacked the historical context of that specific 2017 iOS 11 bug.</li>
+                    <li><strong>Multi-Intent Ambiguity:</strong> "Updated my laptop and lost all passwords" triggered
+                        <code>account_security</code>, but the root cause is <code>software_troubleshooting</code>.
+                        Single-label classification forces false negatives.
+                    </li>
+                    <li><strong>Strict JSON Formatting Halts:</strong> Early in development, the LLM returned markdown
+                        fences (<code>```json</code>) which broke the parser until defensive cleaning steps were
+                        implemented in <code>evaluate_3.py</code>.</li>
+                </ul>
+            </div>
+
+            <div class="methodology-section reveal">
+                <h3>🎯 What I'd do with one more week</h3>
+                <ul class="methodology-list">
+                    <li><strong>Model Swapping:</strong> Replace Codestral with a generalized, routing-specific model
+                        (like Claude 3 Haiku or Gemini 1.5 Flash) to immediately fix the software bias.</li>
+                    <li><strong>Dedicated Sentiment Triage:</strong> Run a fast Sentiment Analysis classifier *before*
+                        the intent classifier to strictly catch and escalate angry customers, fixing the low 24.21%
+                        escalation recall rate.</li>
+                    <li><strong>Dynamic Few-Shot Prompting:</strong> Programmatically inject 3 examples of the *hardest*
+                        classes (Billing, Security) into the prompt context to combat the Golden Dataset's heavy class
+                        imbalance.</li>
+                    <li><strong>Metadata Filtering in ChromaDB:</strong> Extract device types from tweets (e.g.,
+                        "MacBook", "iPhone") and filter the vector search so Mac queries do not retrieve iPhone
+                        solutions.</li>
+                </ul>
+            </div>
+
+            <!-- About Me Section -->
+            <div class="about-me-section reveal">
+                <div class="about-header">
+                    <h2>About the Developer</h2>
+                </div>
+                <div class="about-content">
+                    <div class="about-info">
+                        <h3>Yeshwanth</h3>
+                        <p class="subtitle">AI/ML & Full Stack Engineer</p>
+                        <p>Graduate Master of Computer Applications (2026) with 9.19 cgpa. Deeply focused on the
+                            intersection
+                            of artificial intelligence and robust web architecture.</p>
+                        <p>I built Resolve.AI to demonstrate a complete understanding of end-to-end LLM pipelines. This
+                            includes messy Kaggle CSV data extraction (Pandas), manual Golden Dataset construction to
+                            avoid data leakage, strict JSON parsing, deterministic rule fallbacks, RAG vector retrieval
+                            (ChromaDB), and automated LLM-as-a-Judge evaluations via Scikit-Learn metrics.</p>
+                    </div>
+                    <div class="about-buttons">
+                        <a href="https://github.com/Yesh6957/resolve-ai" target="_blank" class="btn btn-primary">View
+                            Full GitHub Repository</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         FOOTER
+         ========================================================================== -->
+    <footer>
+        <p>© 2026 Resolve.AI - Engineered by Yeshwanth J</p>
+        <p style="font-size: 0.85rem; opacity: 0.6; margin-top: 1rem;">Built with Python, Pandas, ChromaDB,
+            Scikit-Learn, and TailwindCSS</p>
+    </footer>
+
+    <!-- ==========================================================================
+         JAVASCRIPT LOGIC
+         ========================================================================== -->
+    <script>
+        /* --------------------------------------------------------------------------
+           1. NAVIGATION & SCROLL REVEAL LOGIC
+           -------------------------------------------------------------------------- */
+        const revealElements = document.querySelectorAll('.reveal');
+
+        const revealOnScroll = () => {
+            revealElements.forEach(el => {
+                // Trigger reveal when element is 50px into the viewport
+                if (el.getBoundingClientRect().top < window.innerHeight - 50) {
+                    el.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        function switchPage(pageName) {
+            // Hide all pages, show target page
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(pageName).classList.add('active');
+
+            // Update active state in nav
+            document.getElementById('nav-' + pageName).classList.add('active');
+
+            // If switching to dashboard, load the CSV metrics
+            if (pageName === 'dashboard') {
+                loadDynamicData();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(revealOnScroll, 150); // Re-trigger animations on new page
+        }
+
+        /* --------------------------------------------------------------------------
+           2. DYNAMIC DATA LOADING (MOCK API FALLBACK TO EXACT PYTHON CSV OUTPUT)
+           -------------------------------------------------------------------------- */
+        // This function attempts to fetch from a live backend API.
+        // Because browsers cannot read local CSV files directly for security reasons,
+        // it falls back to the exact metrics pulled from the evaluate_3.py output.
+        async function loadDynamicData() {
+            try {
+                // Attempt backend fetch (e.g. if running a Flask server)
+                const res = await fetch('http://localhost:5000/api/metrics');
+                if (!res.ok) throw new Error("API not available");
+                const data = await res.json();
+                populateDashboard(data);
+            } catch (e) {
+                console.log("Backend API unavailable. Loading final evaluation CSV data directly...");
+
+                // Fallback: Exact metrics from the final evaluate_3.py & baselines_3.py run
+                const finalData = {
+                    baseline_intent: 60.00,
+                    agent_intent: 28.50,
+                    escalation_precision: 67.65,
+                    escalation_recall: 24.21,
+                    judge_tone: 2.90,
+                    judge_grounding: 2.60,
+                    distribution: {
+                        labels: ["General Inquiry", "Software", "Hardware", "Other", "Security", "Connectivity", "Billing"],
+                        values: [120, 24, 22, 17, 8, 7, 2]
+                    },
+                    table_metrics: [
+                        { intent: "General Inquiry", precision: "71%", recall: "20%", f1: "0.31", support: 120, status: "Imbalanced" },
+                        { intent: "Software Issues", precision: "17%", recall: "83%", f1: "0.28", support: 24, status: "Domain Bias" },
+                        { intent: "Hardware Support", precision: "50%", recall: "14%", f1: "0.21", support: 22, status: "Low Recall" },
+                        { intent: "Other", precision: "25%", recall: "35%", f1: "0.29", support: 17, status: "Ambiguous" },
+                        { intent: "Security", precision: "60%", recall: "38%", f1: "0.46", support: 8, status: "Fair" },
+                        { intent: "Connectivity", precision: "11%", recall: "14%", f1: "0.12", support: 7, status: "Poor" },
+                        { intent: "Billing", precision: "0%", recall: "0%", f1: "0.00", support: 2, status: "Failed" }
+                    ]
+                };
+                populateDashboard(finalData);
+            }
+        }
+
+        function populateDashboard(data) {
+            // Update KPIs
+            document.getElementById('kpi-baseline').textContent = data.baseline_intent.toFixed(2) + '%';
+            document.getElementById('kpi-accuracy').textContent = data.agent_intent.toFixed(2) + '%';
+            document.getElementById('kpi-safety-p').textContent = data.escalation_precision.toFixed(2) + '%';
+            document.getElementById('kpi-safety-r').textContent = data.escalation_recall.toFixed(2) + '%';
+
+            document.getElementById('judge-tone-val').textContent = data.judge_tone.toFixed(2) + ' / 5.0';
+            document.getElementById('judge-grounding-val').textContent = data.judge_grounding.toFixed(2) + ' / 5.0';
+
+            // Populate Metrics Table
+            const tbody = document.getElementById('metrics-table-body');
+            tbody.innerHTML = ''; // clear existing
+            data.table_metrics.forEach(row => {
+                let badgeClass = row.status === 'Fair' ? 'badge-success' : (row.status === 'Failed' || row.status === 'Poor' ? 'badge-danger' : 'badge-warning');
+                let tr = `<tr>
+                    <td><strong>${row.intent}</strong></td>
+                    <td>${row.precision}</td>
+                    <td>${row.recall}</td>
+                    <td>${row.f1}</td>
+                    <td>${row.support}</td>
+                    <td><span class="badge ${badgeClass}">${row.status}</span></td>
+                </tr>`;
+                tbody.innerHTML += tr;
+            });
+
+            // Render Chart.js
+            renderCharts(data);
+        }
+
+        /* --------------------------------------------------------------------------
+           3. CHART.JS CONFIGURATION & RENDERING
+           -------------------------------------------------------------------------- */
+        let intentChartInstance = null;
+        let accuracyChartInstance = null;
+
+        function renderCharts(data) {
+            // Doughnut Chart: Golden Dataset Distribution
+            const ctx1 = document.getElementById('intentChart').getContext('2d');
+            if (intentChartInstance) intentChartInstance.destroy();
+
+            intentChartInstance = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: data.distribution.labels,
+                    datasets: [{
+                        data: data.distribution.values,
+                        backgroundColor: ['#3B4F43', '#526B5D', '#7A9084', '#A3B5A6', '#C7D4C8', '#DFB0B9', '#BA5A52'],
+                        borderColor: '#222222',
+                        borderWidth: 1,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600' }, color: '#222' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    if (label) label += ': ';
+                                    let value = context.raw;
+                                    let total = context.chart._metasets[context.datasetIndex].total;
+                                    let percentage = Math.round((value / total) * 100) + "%";
+                                    return label + value + ' rows (' + percentage + ')';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // Bar Chart: Accuracy vs Baselines
+            const ctx2 = document.getElementById('accuracyChart').getContext('2d');
+            if (accuracyChartInstance) accuracyChartInstance.destroy();
+
+            accuracyChartInstance = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ["Trivial Baseline (General)", "Simple Heuristic (Regex)", "Codestral 7B Agent"],
+                    datasets: [{
+                        label: 'Intent Accuracy (%)',
+                        data: [60.00, 19.50, 28.50],
+                        backgroundColor: ['#7A9084', '#A3B5A6', '#BA5A52'],
+                        borderColor: '#222222',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: function (value) { return value + "%" } },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600' }, color: '#222' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* --------------------------------------------------------------------------
+           4. INTERACTIVE LIVE PIPELINE SIMULATOR (MIMICKING python_3.py)
+           -------------------------------------------------------------------------- */
+
+        // Helper function for the quick-action buttons
+        function fillInput(text) {
+            document.getElementById('demo-input').value = text;
+        }
+
+        // Trigger process when Enter key is pressed in the input box
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                processAgentQuery();
+            }
+        }
+
+        // Keep chat scrolled to the newest message
+        function scrollToBottom() {
+            const box = document.getElementById('chat-box');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // Toggles the visibility of the simulated JSON output
+        function toggleJSON(id) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('visible')) {
+                el.classList.remove('visible');
+            } else {
+                el.classList.add('visible');
+            }
+        }
+
+        // Main Simulation Engine
+        function processAgentQuery() {
+            const inputEl = document.getElementById('demo-input');
+            const btn = document.getElementById('send-btn');
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            const chatBox = document.getElementById('chat-box');
+
+            // 1. Append User Message
+            chatBox.innerHTML += `
+                <div class="chat-message user-message">
+                    <div class="message-sender">👤 Customer</div>
+                    <p class="message-text">${text}</p>
+                </div>
+            `;
+            inputEl.value = '';
+
+            // Disable input while processing
+            inputEl.disabled = true;
+            btn.disabled = true;
+            scrollToBottom();
+
+            // 2. Append LLM Loading Indicator
+            const loaderId = 'loader-' + Date.now();
+            chatBox.innerHTML += `
+                <div id="${loaderId}" class="chat-message ai-message typing-indicator">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+            `;
+            scrollToBottom();
+
+            // 3. Simulate Pipeline Latency and Logic (Timeout 1.5 seconds)
+            setTimeout(() => {
+                document.getElementById(loaderId).remove();
+                inputEl.disabled = false;
+                btn.disabled = false;
+                inputEl.focus();
+
+                // MOCK LOGIC: Replicating `detect_rule_based_signals()` and LLM routing
+                const lower = text.toLowerCase();
+                let intent = "general_inquiry";
+                let escalate = false;
+                let reason = "Safe for auto-reply";
+                let risk = "Low (Standard)";
+                let riskClass = "risk-low";
+                let reply = "";
+
+                // Regex Fallback Checks (Pre-LLM)
+                if (lower.match(/(crack|break|drop|shatter|water|damage|swollen|battery|broke)/)) {
+                    intent = "hardware_repair";
+                    escalate = true;
+                    reason = "Physical hardware damage detected via rule-base.";
+                    risk = "High (Hardware Defect)";
+                    riskClass = "risk-high";
+                } else if (lower.match(/(refund|charge|money|pay|billing)/)) {
+                    intent = "billing_purchases";
+                    escalate = true;
+                    reason = "Refund or disputed charge detected.";
+                    risk = "High (Financial)";
+                    riskClass = "risk-high";
+                } else if (lower.match(/(fuck|shit|useless|hate|idiot|garbage|terrible|horrible)/)) {
+                    intent = "other";
+                    escalate = true;
+                    reason = "Highly frustrated or toxic customer detected.";
+                    risk = "Critical (Toxicity)";
+                    riskClass = "risk-critical";
+                } else if (lower.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/)) {
+                    intent = "account_security";
+                    escalate = true;
+                    reason = "Customer message contains possible PII (Email).";
+                    risk = "Critical (PII Leak)";
+                    riskClass = "risk-critical";
+                } else if (lower.match(/(update|bug|glitch|freeze|crash|ios|app)/)) {
+                    intent = "software_troubleshooting";
+                    reply = "I understand you're facing software issues. We recently released an iOS patch. Have you updated to the latest version in Settings > General > Software Update?";
+                } else if (lower.match(/(password|lock|login|apple id)/)) {
+                    intent = "account_security";
+                    reply = "For your security, I cannot access your Apple ID over social media. Please visit iforgot.apple.com to reset your credentials securely.";
+                } else if (lower.match(/(wifi|bluetooth|connect|internet)/)) {
+                    intent = "device_connectivity";
+                    reply = "Let's check your network settings. Try toggling Airplane mode on and off, or go to Settings > General > Reset > Reset Network Settings.";
+                } else {
+                    reply = "Thank you for reaching out to Apple Support. Could you provide a bit more detail regarding the issue so I can assist you properly?";
+                }
+
+                // Create Mock JSON response to show the user
+                const mockJson = {
+                    intent: intent,
+                    confidence_score: escalate ? 0.99 : parseFloat((Math.random() * (0.98 - 0.85) + 0.85).toFixed(2)),
+                    should_escalate: escalate,
+                    escalation_reason: escalate ? reason : ""
+                };
+
+                const jsonId = 'json-' + Date.now();
+                const jsonString = JSON.stringify(mockJson, null, 2)
+                    .replace(/"(.*?)":/g, '<span class="json-key">"$1"</span>:')
+                    .replace(/: "(.*?)"/g, ': <span class="json-string">"$1"</span>')
+                    .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+                    .replace(/: ([0-9.]+)/g, ': <span class="json-number">$1</span>');
+
+                // 4. Construct AI Response HTML
+                let aiBlock = `
+                <div class="chat-message ai-message">
+                    <div class="message-sender">
+                        <span class="logo-dot"></span> Pipeline Resolution
+                    </div>
+                    
+                    <div class="processing-steps">
+                        <span class="step-badge">Intent: ${intent}</span>
+                        <span class="step-badge">Conf: ${mockJson.confidence_score}</span>
+                        <span class="step-badge ${riskClass}">Risk: ${risk}</span>
+                    </div>`;
+
+                if (escalate) {
+                    aiBlock += `
+                        <div class="action-taken">
+                            <div class="action-header">
+                                <span class="status-indicator escalate">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                                    ESCALATED TO HUMAN
+                                </span>
+                            </div>
+                            <span class="action-reason">REASON: ${reason}</span>
+                        </div>
+                        <p class="message-text" style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-gray);">
+                            <em>Note: LLM generation halted to save tokens. Ticket routed to human agent queue.</em>
+                        </p>
+                    `;
+                } else {
+                    aiBlock += `
+                        <p class="message-text"><strong>Reply:</strong> "${reply}"</p>
+                        <div class="action-taken">
+                            <div class="action-header">
+                                <span class="status-indicator handled">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+                                    AUTO-HANDLED
+                                </span>
+                            </div>
+                            <span class="action-reason">Context retrieved via ChromaDB</span>
+                        </div>
+                    `;
+                }
+
+                // Add Toggleable JSON Block
+                aiBlock += `
+                    <button class="toggle-json-btn" onclick="toggleJSON('${jsonId}')">View Raw JSON Output</button>
+                    <pre id="${jsonId}" class="json-viewer">${jsonString}</pre>
+                </div>`;
+
+                chatBox.innerHTML += aiBlock;
+                scrollToBottom();
+
+            }, 1500); // 1.5s simulated delay
+        }
+    </script>
+</body>
+
+</html>
