@@ -2,6 +2,9 @@
 """
 Resolve.AI Backend API
 Serves evaluation data, metrics, and dashboard analytics to the frontend.
+Also serves a real-time /api/process endpoint that runs the actual
+SupportAgent pipeline (rule-based signals + LLM classification +
+ChromaDB RAG + grounded reply generation) for the live demo widget.
 """
 
 import os
@@ -12,6 +15,11 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file
+
+# pipeline.py lives at ResolveAI/src/pipeline.py, and src/ has an
+# __init__.py making it a proper package, so this import works when
+# main.py is run from the ResolveAI/ project root.
+from src.pipeline import SupportAgent
 
 # ============================================================
 # SETUP
@@ -36,6 +44,72 @@ GOLDEN_PATH = PROCESSED_DIR / "golden_dataset.csv"
 EVALUATION_PATH = PROCESSED_DIR / "evaluation_results.csv"
 RAG_PATH = PROCESSED_DIR / "rag_knowledge_base.csv"
 BASELINE_PATH = PROCESSED_DIR / "baseline_results.txt"
+
+
+# ============================================================
+# SUPPORT AGENT (lazy singleton — building the ChromaDB
+# knowledge base and warming up the LLM client on every request
+# would be slow and expensive, so we build it once and reuse it)
+# ============================================================
+
+_agent = None
+_agent_init_error = None
+
+
+def get_agent():
+    """Lazily instantiate the real SupportAgent pipeline."""
+    global _agent, _agent_init_error
+
+    if _agent is not None:
+        return _agent
+
+    if _agent_init_error is not None:
+        # Don't retry a broken init on every request — fail fast
+        raise _agent_init_error
+
+    try:
+        agent = SupportAgent()
+        agent.build_knowledge_base()
+        _agent = agent
+        return _agent
+    except Exception as e:
+        _agent_init_error = e
+        raise
+
+
+# ============================================================
+# LIVE PIPELINE ENDPOINT (used by the chat widget in index.html)
+# ============================================================
+
+@app.route('/api/process', methods=['POST'])
+def process_message():
+    """
+    Runs a customer message through the real pipeline:
+    rule-based safety signals -> LLM intent classification ->
+    (if safe) ChromaDB RAG retrieval -> grounded reply generation.
+    Returns the same shape as SupportAgent.process_tweet().
+    """
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        text = str(payload.get("text", "")).strip()
+
+        if not text:
+            return jsonify({"error": "The 'text' field is required."}), 400
+
+        if len(text) > 1000:
+            return jsonify({"error": "Message too long (max 1000 characters)."}), 400
+
+        agent = get_agent()
+        result = agent.process_tweet(text)
+        return jsonify(result)
+
+    except Exception as e:
+        # Surface the real error instead of silently falling back to mock data —
+        # a failed real call should look like a failure, not a fake success.
+        return jsonify({
+            "error": "The live pipeline could not process this message.",
+            "detail": str(e)
+        }), 500
 
 
 # ============================================================
@@ -736,19 +810,20 @@ if __name__ == '__main__':
     print(f"📚 RAG data file: {RAG_PATH}")
     print(f"\n🌐 Server running at http://localhost:5000")
     print("📖 API Documentation:")
-    print("   - GET /health                     → Health check")
-    print("   - GET /api/executive-summary      → Key metrics")
-    print("   - GET /api/class-wise-performance → Per-class metrics")
-    print("   - GET /api/confusion-matrices     → Confusion matrices")
-    print("   - GET /api/safety-failures        → False negatives")
-    print("   - GET /api/rag-evidence           → RAG examples")
-    print("   - GET /api/llm-judge              → Judge scores")
-    print("   - GET /api/failure-cases          → Failure analysis")
-    print("   - GET /api/intent-distribution    → Chart data")
-    print("   - GET /api/accuracy-comparison    → Accuracy chart")
-    print("   - GET /api/misleading-metrics     → Explanation")
-    print("   - GET /api/decision-log           → Architecture")
-    print("   - GET /api/future-improvements    → Next steps")
+    print("   - GET  /health                     → Health check")
+    print("   - POST /api/process                → Run a message through the real pipeline")
+    print("   - GET  /api/executive-summary      → Key metrics")
+    print("   - GET  /api/class-wise-performance → Per-class metrics")
+    print("   - GET  /api/confusion-matrices     → Confusion matrices")
+    print("   - GET  /api/safety-failures        → False negatives")
+    print("   - GET  /api/rag-evidence           → RAG examples")
+    print("   - GET  /api/llm-judge              → Judge scores")
+    print("   - GET  /api/failure-cases          → Failure analysis")
+    print("   - GET  /api/intent-distribution    → Chart data")
+    print("   - GET  /api/accuracy-comparison    → Accuracy chart")
+    print("   - GET  /api/misleading-metrics     → Explanation")
+    print("   - GET  /api/decision-log           → Architecture")
+    print("   - GET  /api/future-improvements    → Next steps")
     print("\n" + "=" * 60)
     
     # Run with debug mode
