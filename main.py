@@ -47,34 +47,56 @@ BASELINE_PATH = PROCESSED_DIR / "baseline_results.txt"
 
 
 # ============================================================
-# SUPPORT AGENT (lazy singleton — building the ChromaDB
-# knowledge base and warming up the LLM client on every request
-# would be slow and expensive, so we build it once and reuse it)
+# SUPPORT AGENT (eager singleton, built ONCE at process startup)
+#
+# This used to build lazily on the first /api/process request.
+# That caused the OOM restarts: the first live request would
+# synchronously download the ~80MB ONNX embedding model AND embed
+# all 1,800 knowledge-base rows inside the request/response cycle
+# — a large, sudden memory + CPU spike that Render's monitor read
+# as a memory-limit breach and restarted the instance for.
+#
+# Building it once here, at import time, means the spike happens
+# during deploy/boot (before the app accepts traffic) instead of
+# during a live user request. Combine this with running gunicorn
+# as a SINGLE worker with --preload (see the comment at the bottom
+# of this file) so the model is loaded once, not once per worker.
 # ============================================================
 
 _agent = None
 _agent_init_error = None
 
 
-def get_agent():
-    """Lazily instantiate the real SupportAgent pipeline."""
+def _initialize_agent():
+    """Build the SupportAgent once, at startup, not per-request."""
     global _agent, _agent_init_error
 
-    if _agent is not None:
-        return _agent
-
-    if _agent_init_error is not None:
-        # Don't retry a broken init on every request — fail fast
-        raise _agent_init_error
-
     try:
+        print("🔧 Initializing SupportAgent (one-time startup cost)...")
         agent = SupportAgent()
         agent.build_knowledge_base()
         _agent = agent
-        return _agent
+        print("✅ SupportAgent ready.")
     except Exception as e:
+        # Don't crash the whole app if the LLM key is missing or the
+        # knowledge base fails to build — let /health and the dashboard
+        # routes keep working, and have /api/process report the real error.
         _agent_init_error = e
-        raise
+        print(f"❌ SupportAgent failed to initialize: {e}")
+
+
+# Runs once when this module is imported (i.e. once at gunicorn boot
+# per worker process — which is why --workers 1 matters, see below).
+_initialize_agent()
+
+
+def get_agent():
+    """Return the already-built agent, or raise the startup error."""
+    if _agent is not None:
+        return _agent
+    if _agent_init_error is not None:
+        raise _agent_init_error
+    raise RuntimeError("SupportAgent did not initialize for an unknown reason.")
 
 
 # ============================================================
@@ -804,6 +826,17 @@ if __name__ == '__main__':
     print("=" * 60)
     print("🚀 Resolve.AI Backend API")
     print("=" * 60)
+    print("\n⚠️  IMPORTANT (Render deploy): set your start command to:")
+    print("    gunicorn main:app --workers 1 --preload --timeout 120")
+    print("    --workers 1  → avoids loading the ~80MB embedding model")
+    print("                   once per worker (this was doubling/tripling")
+    print("                   memory use and triggering OOM restarts).")
+    print("    --preload    → loads the app (and builds the knowledge")
+    print("                   base) once in the master process before")
+    print("                   forking, instead of during a live request.")
+    print("    --timeout 120 → gives the one-time startup build enough")
+    print("                     time to download the embedding model and")
+    print("                     embed ~1,800 rows without being killed.")
     print("\n✅ Starting Flask server...")
     print(f"📁 Data directory: {PROCESSED_DIR}")
     print(f"📊 Evaluation file: {EVALUATION_PATH}")
