@@ -108,4 +108,3 @@ Built by Yeshwanth J., pursuing a Master of Computer Applications (expected 2026
 
 - [GitHub Repository](https://github.com/Yesh6957/resolve-ai)
 - [Portfolio](https://yesh-portfolio-dev.vercel.app/)
--
