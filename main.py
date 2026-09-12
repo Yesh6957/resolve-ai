@@ -8,10 +8,10 @@ import os
 import json
 import pandas as pd
 from pathlib import Path
-from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import datetime
+from flask import Flask, jsonify, request, send_file
 
 # ============================================================
 # SETUP
@@ -19,9 +19,9 @@ from datetime import datetime
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def home():
-    return app.send_static_file('index.html')
+    return send_file(PROJECT_ROOT / 'index.html')
 
 # Load environment variables
 PROJECT_ROOT = Path(__file__).resolve().parent
