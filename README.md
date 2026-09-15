@@ -35,7 +35,7 @@ Full breakdown, per-intent metrics, failure analysis, and the 14-item decision l
 - **Backend:** Python, Flask, Flask-CORS, Gunicorn
 - **Data processing:** Pandas, NumPy, scikit-learn (metrics: precision/recall/F1, confusion matrices)
 - **RAG:** ChromaDB (local vector store)
-- **LLM:** Groq (Codestral) for intent classification and reply generation; Google Gemini (`google-genai`) for LLM-as-a-Judge scoring
+- **LLM:** Groq (Codestral) for intent classification and reply generation
 - **Frontend:** HTML5, CSS3, vanilla JavaScript, Chart.js
 - **Notebooks:** Jupyter, used for data cleaning and golden-set labelling
 
